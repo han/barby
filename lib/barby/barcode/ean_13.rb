@@ -46,9 +46,9 @@ module Barby
     }
 
     #These are the lines that "stick down" in the graphical representation
-    START = '101'
-    CENTER = '01010'
-    STOP = '101'
+    START = '202'
+    CENTER = '02020'
+    STOP = '202'
 
     #EAN-13 barcodes have 12 digits + check digit
     FORMAT = /^\d{12}$/

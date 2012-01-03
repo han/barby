@@ -10,7 +10,7 @@ module Barby
 
     register :to_png, :to_image, :to_datastream
 
-    attr_accessor :xdim, :ydim, :width, :height, :margin
+    attr_accessor :xdim, :ydim, :width, :height, :margin, :guard_bar_drop
 
 
     #Creates a PNG::Canvas object and renders the barcode on it
@@ -36,10 +36,11 @@ module Barby
           end
         else
           x, y = margin, margin
-          booleans.each do |bar|
+          booleans.each_with_index do |bar, i|
             if bar
               x.upto(x+(xdim-1)) do |xx|
-                y.upto y+(height-1) do |yy|
+                drop = guard_bars.include?(i) ? 0 : guard_bar_drop
+                y.upto y+(height-1)-drop do |yy|
                   canvas[xx,yy] = ChunkyPNG::Color::BLACK
                 end
               end
@@ -99,6 +100,11 @@ module Barby
 
     def length
       barcode.two_dimensional? ? encoding.first.length : encoding.length
+    end
+
+    def guard_bar_drop
+      return 0 if guard_bars == nil || guard_bars.count == 0
+      [(@guard_bar_drop || 10), height / 2].min
     end
 
 

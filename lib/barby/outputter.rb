@@ -21,6 +21,7 @@ module Barby
   class Outputter
 
     attr_accessor :barcode
+    attr_reader :guard_bars
 
 
     #An outputter instance will have access to a Barcode
@@ -72,18 +73,26 @@ module Barby
     #in the same way
     def booleans(reload=false)#:doc:
       if two_dimensional?
-        encoding(reload).map{|l| l.split(//).map{|c| c == '1' } }
+        encoding(reload).map{|l| l.split(//).map{|c| c != '0' } }
       else
         encoding(reload).split(//).map{|c| c == '1' }
       end
     end
-
 
     #Returns the barcode's encoding. The encoding
     #is cached and can be reloaded by passing true
     def encoding(reload=false)#:doc:
       @encoding = barcode.encoding if reload
       @encoding ||= barcode.encoding
+      if @guard_bars == nil || reload
+        @guard_bars = []
+        pos = 0
+        while (pos = @encoding.index('2', pos)) != nil
+          @guard_bars << pos
+          @encoding[pos] = '1'
+        end
+      end
+      @encoding
     end
 
 
@@ -96,12 +105,12 @@ module Barby
       if two_dimensional?
         encoding(reload).map do |line|
           line.scan(/1+|0+/).map do |group|
-            [group[0,1] == '1', group.size]
+            [group[0,1] != '0', group.size]
           end
         end
       else
         encoding(reload).scan(/1+|0+/).map do |group|
-          [group[0,1] == '1', group.size]
+          [group[0,1] != '0', group.size]
         end
       end
     end
