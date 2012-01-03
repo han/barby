@@ -7,7 +7,7 @@ module Barby
 
     register :to_pdf, :annotate_pdf
 
-    attr_accessor :xdim, :ydim, :x, :y, :height, :margin, :unbleed
+    attr_accessor :xdim, :ydim, :x, :y, :height, :margin, :unbleed, :guard_bar_size, :print_code
 
 
     def to_pdf(opts={})
@@ -39,16 +39,27 @@ module Barby
             ypos += ydim
           end
         else
+          line = 0
+          xpos += 5*xdim
+          ypos += [0,text_size - guard_bar_size].max if print_code
+
           boolean_groups.each do |bar,amount|
             if bar
-              pdf.move_to(xpos+unbleed, ypos)
+              drop = guard_bars.include?(line) ? 0 : guard_bar_drop
+              pdf.move_to(xpos+unbleed, ypos+drop)
               pdf.line_to(xpos+unbleed, ypos+height)
               pdf.line_to(xpos+(xdim*amount)-unbleed, ypos+height)
-              pdf.line_to(xpos+(xdim*amount)-unbleed, ypos)
-              pdf.line_to(xpos+unbleed, ypos)
+              pdf.line_to(xpos+(xdim*amount)-unbleed, ypos+drop)
+              pdf.line_to(xpos+unbleed, ypos+drop)
               pdf.fill
             end
+            line += amount
             xpos += (xdim*amount)
+          end
+          if print_code
+            0.upto(barcode.code.length) do |i|
+              pdf.draw_text(barcode.code[i], :at => [text_x(i), 0], :size => text_size)
+            end
           end
         end
 
@@ -57,6 +68,13 @@ module Barby
       pdf
     end
 
+    def print_code
+      @print_code || false
+    end
+
+    def text_size
+      4 + 7*xdim
+    end
 
     def length
       two_dimensional? ? encoding.first.length : encoding.length
@@ -106,6 +124,30 @@ module Barby
     #For 2D, both x and y dimensions are reduced.
     def unbleed
       @unbleed || 0
+    end
+
+    def guard_bar_size
+      @guard_bar_size || 10
+    end
+
+    def guard_bar_drop
+      return 0 if guard_bars == nil || guard_bars.length == 0
+      [guard_bar_size, height / 2].min
+    end
+
+    def char_spacing
+      @char_spacing ||= (encoding.length - guard_bars.length) / barcode.data.length
+    end
+
+    #ToDo: specific for EAN-13
+    def text_x(pos)
+      unless @text_pos
+        @text_pos = []
+        0.upto(13) do |i|
+          @text_pos[i] = x + i * char_spacing * xdim + (i >= 7 ? 6 : (i >= 1 ? 2 : 0))*xdim
+        end
+      end
+      @text_pos[pos]
     end
 
 

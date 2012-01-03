@@ -53,11 +53,12 @@ module Barby
     #EAN-13 barcodes have 12 digits + check digit
     FORMAT = /^\d{12}$/
 
-    attr_accessor :data
+    attr_accessor :data, :code
 
 
     def initialize(data)
-      self.data = data
+      self.code = data
+      self.data = data[0,12]
       raise ArgumentError, 'data not valid' unless valid?
     end
 
